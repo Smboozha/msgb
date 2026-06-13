@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ищу друзей — О себе</title>
+  <style>
+    :root{--bg:#f6f7f9;--card:#fff;--accent:#2b8aed;--text:#111}
+    body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+    .container{max-width:900px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px}
+    .avatar{width:72px;height:72px;border-radius:12px;background:linear-gradient(135deg,#6dd5fa,#2980b9);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:28px}
+    h1{margin:0;font-size:26px}
+    .lead{color:#444;margin-top:6px}
+    .grid{display:grid;grid-template-columns:1fr 320px;gap:18px;margin-top:18px}
+    .card{background:var(--card);padding:16px;border-radius:10px;box-shadow:0 6px 18px rgba(20,20,20,0.06)}
+    .about h2{margin-top:0}
+    .controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    button{background:var(--accent);color:#fff;border:0;padding:8px 12px;border-radius:8px;cursor:pointer}
+    input[type="search"]{padding:8px 12px;border-radius:8px;border:1px solid #ddd;min-width:160px}
+    .menu-list{display:grid;gap:12px}
+    .item{display:flex;justify-content:space-between;align-items:flex-start}
+    .price{color:var(--accent);font-weight:700}
+    footer{margin-top:22px;color:#666;font-size:14px;text-align:center;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+    .respond-btn{background:#10b981}
+    .counter{font-weight:700;color:#0b7a44}
+    @media (max-width:820px){.grid{grid-template-columns:1fr}}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="avatar">Я</div>
+      <div>
+        <h1>Ищу друзей</h1>
+        <p class="lead">Этот сайт посвящён тому, что я хочу завести друзей — немного обо мне и меню встреч/активностей.</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <main class="card about">
+        <h2>Про меня</h2>
+        <p>Привет! Меня зовут [Ваше имя]. Люблю прогулки, кофе и настольные игры. Ищу новых друзей для совместных встреч, прогулок и разговоров. Я открытый и коммуникабельный человек — буду рад познакомиться.</p>
+
+        <h3 style="margin-top:14px">Что я люблю</h3>
+        <ul>
+          <li>Кафе и разговоры за чашкой кофе</li>
+          <li>Прогулки в парке и походы</li>
+          <li>Настолки и киновечера</li>
+        </ul>
+
+        <h3 style="margin-top:14px">Как связаться</h3>
+        <p>Можете нажать кнопку "Откликнуться" справа — я увижу, что вы заинтересованы. Также укажите удобный способ связи в сообщении.</p>
+
+        <h3 style="margin-top:14px">Правила встречи</h3>
+        <ol>
+          <li>Вежливость и уважение</li>
+          <li>Открытость к новым знакомствам</li>
+          <li>Безопасность: встречи в публичных местах</li>
+        </ol>
+      </main>
+
+      <aside class="card">
+        <h3>Меню встреч</h3>
+        <div class="controls">
+          <input id="search" type="search" placeholder="Поиск активности..." />
+          <button onclick="filterCategory('all')">Все</button>
+          <button onclick="filterCategory('coffee')">Кофе</button>
+          <button onclick="filterCategory('walk')">Прогулка</button>
+          <button onclick="filterCategory('games')">Игры</button>
+        </div>
+
+        <div id="menu" class="menu-list" style="margin-top:12px">
+          <!-- наполнение скриптом -->
+        </div>
+
+        <div style="margin-top:14px;text-align:center">
+          <textarea id="msg" placeholder="Короткое сообщение (необязательно)" style="width:100%;padding:8px;border-radius:8px;border:1px solid #ddd"></textarea>
+          <button id="respond" class="respond-btn" style="margin-top:8px;padding:10px 14px">Откликнуться</button>
+        </div>
+      </aside>
+    </div>
+
+    <footer>
+      <div>© <span id="year"></span> Я хочу друзей</div>
+      <div>Откликнулись: <span id="counter" class="counter">0</span></div>
+    </footer>
+  </div>
+
+  <script>
+    const data = [
+      { id:1, title:"Кофе в центре", desc:"Неформальная встреча в уютном кафе.", category:"coffee" },
+      { id:2, title:"Прогулка в парке", desc:"Спокойная прогулка и фото природы.", category:"walk" },
+      { id:3, title:"Вечер настолок", desc:"Играем в настольные игры (2-4 человека).", category:"games" },
+      { id:4, title:"Кофе и разговоры", desc:"Короткая встреча за кофе по будням.", category:"coffee" }
+    ];
+
+    const menuEl = document.getElementById('menu');
+    const yearEl = document.getElementById('year');
+    const counterEl = document.getElementById('counter');
+    yearEl.textContent = new Date().getFullYear();
+
+    // load counter from localStorage to persist across reloads
+    let counter = parseInt(localStorage.getItem('friend_counter') || '0', 10);
+    counterEl.textContent = counter;
+
+    function render(items){
+      menuEl.innerHTML = items.map(it=>`
+        <div class="item" data-cat="${it.category}">
+          <div>
+            <strong>${it.title}</strong>
+            <div style="color:#666;font-size:14px">${it.desc}</div>
+          </div>
+          <div class="price">${it.category}</div>
+        </div>
+      `).join('');
+    }
+
+    function filterCategory(cat){
+      const q = document.getElementById('search').value.trim().toLowerCase();
+      let items = data.slice();
+      if(cat && cat !== 'all') items = items.filter(i=>i.category===cat);
+      if(q) items = items.filter(i=> (i.title + ' ' + i.desc).toLowerCase().includes(q));
+      render(items);
+    }
+
+    document.getElementById('search').addEventListener('input', ()=> filterCategory(currentCategory));
+    let currentCategory = 'all';
+    document.querySelectorAll('.controls button').forEach(b=>{
+      b.addEventListener('click', e=>{
+        currentCategory = e.target.getAttribute('onclick').match(/'(.+)'/)[1];
+      })
+    });
+
+    document.getElementById('respond').addEventListener('click', ()=>{
+      // increment counter, save message in localStorage list (simple)
+      counter = counter + 1;
+      localStorage.setItem('friend_counter', String(counter));
+      // store messages (append)
+      const msg = document.getElementById('msg').value.trim();
+      const list = JSON.parse(localStorage.getItem('friend_messages') || '[]');
+      list.push({ time: Date.now(), message: msg });
+      localStorage.setItem('friend_messages', JSON.stringify(list));
+      counterEl.textContent = counter;
+      // quick feedback
+      document.getElementById('msg').value = '';
+      alert('Спасибо — вы откликнулись! Я увижу ваше сообщение.');
+    });
+
+    // initial render
+    render(data);
+  </script>
+</body>
+</html>
+
