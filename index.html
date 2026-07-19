@@ -19,23 +19,32 @@ body {
 }
 .header h1 { font-size: 18px; font-weight: 600; }
 .header p { font-size: 12px; color: #aaa; margin-top: 4px; }
-.step-area {
-  padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; background: #1a1a40; flex-shrink: 0;
-}
-.step-area textarea {
-  width: 100%; height: 80px; padding: 8px 10px; border: 1px solid #333; border-radius: 8px;
-  background: #0f3460; color: #eee; font-size: 12px; font-family: monospace; resize: vertical; outline: none;
-}
-.step-area textarea:focus { border-color: #e94560; }
-.step-row { display: flex; gap: 8px; }
-.step-row button {
-  padding: 8px 14px; border: none; border-radius: 8px; background: #e94560;
-  color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap;
-}
-.step-row button:hover { background: #d63851; }
-.step-row button:disabled { opacity: .5; cursor: not-allowed; }
-.step-row button.secondary { background: #0f3460; }
-.step-row button.secondary:hover { background: #1a4a7a; }
+  .step-area {
+    padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; background: #1a1a40; flex-shrink: 0;
+  }
+  .step-area textarea {
+    width: 100%; height: 72px; padding: 8px 10px; border: 1px solid #333; border-radius: 8px;
+    background: #0f3460; color: #eee; font-size: 12px; font-family: monospace; resize: vertical; outline: none;
+  }
+  .step-area textarea:focus { border-color: #e94560; }
+  .step-row { display: flex; gap: 8px; }
+  .step-row button {
+    padding: 8px 14px; border: none; border-radius: 8px; background: #e94560;
+    color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap;
+  }
+  .step-row button:hover { background: #d63851; }
+  .step-row button:disabled { opacity: .5; cursor: not-allowed; }
+  .step-row button.secondary { background: #0f3460; }
+  .step-row button.secondary:hover { background: #1a4a7a; }
+  .msg .copy-code-btn {
+    display: inline-block; margin-left: 8px; padding: 2px 10px; border: none; border-radius: 6px;
+    background: rgba(255,255,255,.2); color: #fff; font-size: 11px; cursor: pointer; vertical-align: middle;
+  }
+  .msg .copy-code-btn:hover { background: rgba(255,255,255,.35); }
+  .invite-hint {
+    text-align: center; font-size: 11px; color: #666; padding: 2px 16px 6px;
+  }
+  .invite-hint code { background: #0f3460; padding: 1px 6px; border-radius: 4px; color: #e94560; font-size: 11px; }
 .status {
   padding: 6px 16px; font-size: 13px; background: #1a1a40; color: #888; text-align: center; min-height: 28px; flex-shrink: 0;
 }
@@ -85,12 +94,15 @@ body {
   </div>
 
   <div class="step-area" id="stepArea">
-    <textarea id="signalData" placeholder="Сюда будет помещён сигнальный код для отправки собеседнику или вставьте код от него..."></textarea>
+    <textarea id="signalData" placeholder="Сюда будет помещён код приглашения..."></textarea>
     <div class="step-row">
-      <button id="createOfferBtn">1. Создать приглашение</button>
+      <button id="createOfferBtn">Создать приглашение</button>
       <button id="copyBtn" class="secondary">Копировать</button>
-      <button id="applyBtn">2. Применить ответ / Приглашение</button>
+      <button id="applyBtn">Подключиться по коду</button>
     </div>
+  </div>
+  <div class="invite-hint">
+    В чате можно написать <code>/invite</code> для создания приглашения или <code>/join &lt;код&gt;</code> для подключения
   </div>
 
   <div class="status" id="status">Ожидание...</div>
@@ -106,11 +118,11 @@ body {
     <summary>Как пользоваться (без единого сервера)</summary>
     <ol>
       <li>Откройте страницу в двух браузерах (A и B).</li>
-      <li>В окне A нажмите <strong>"1. Создать приглашение"</strong> — в поле появится код.</li>
-      <li>Нажмите <strong>"Копировать"</strong> и отправьте код собеседнику B (хоть в блокнот, хоть по email).</li>
-      <li>В окне B вставьте код в поле и нажмите <strong>"2. Применить ответ / Приглашение"</strong> — в поле B появится ответный код.</li>
-      <li>Скопируйте код из B и отправьте обратно A.</li>
-      <li>В окне A вставьте ответ и снова нажмите <strong>"2. Применить ответ / Приглашение"</strong>.</li>
+      <li>В окне A нажмите <strong>"Создать приглашение"</strong> или напишите в чате <code>/invite</code>.</li>
+      <li>Скопируйте полученный код и отправьте собеседнику B любым способом.</li>
+      <li>В окне B вставьте код в поле и нажмите <strong>"Подключиться по коду"</strong> — появится ответный код.</li>
+      <li>Скопируйте ответный код из B и отправьте обратно A.</li>
+      <li>В окне A вставьте ответный код и снова нажмите <strong>"Подключиться по коду"</strong>.</li>
       <li>Готово! Теперь можно обмениваться сообщениями.</li>
       <li>Если связь потеряна — начните заново (обновите страницу).</li>
     </ol>
@@ -122,6 +134,7 @@ body {
   let pc = null;
   let dc = null;
   let pendingDC = null;
+  let isOffering = false;
   const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
   const signalData = document.getElementById('signalData');
@@ -152,6 +165,27 @@ body {
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
 
+  function addSystemMessage(html) {
+    const div = document.createElement('div');
+    div.className = 'msg system';
+    div.innerHTML = html;
+    messagesEl.appendChild(div);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  messagesEl.addEventListener('click', function(e) {
+    if (e.target.classList.contains('copy-code-btn')) {
+      const code = e.target.dataset.code;
+      if (code) {
+        navigator.clipboard.writeText(code).then(function() {
+          setStatus('Код скопирован');
+        }).catch(function() {
+          setStatus('Ошибка копирования');
+        });
+      }
+    }
+  });
+
   function setConnected() {
     setStatus('Подключено! Можно обмениваться сообщениями.', 'connected');
     msgInput.disabled = false;
@@ -166,14 +200,14 @@ body {
   function setupChannel(channel) {
     dc = channel;
     dc.onopen = function() {
-      addMessage('Соединение установлено', 'system');
+      addSystemMessage('Соединение установлено');
       setConnected();
     };
     dc.onmessage = function(e) {
       addMessage(e.data, 'incoming');
     };
     dc.onclose = function() {
-      addMessage('Соединение разорвано', 'system');
+      addSystemMessage('Соединение разорвано');
       setStatus('Соединение разорвано', 'disconnected');
     };
   }
@@ -186,10 +220,13 @@ body {
       if (pc.iceGatheringState === 'complete') {
         const sdp = JSON.stringify(pc.localDescription);
         signalData.value = sdp;
-        if (createOfferBtn.textContent === '1. Создать приглашение') {
-          setStatus('Скопируйте код и отправьте собеседнику');
+        const escapedSdp = sdp.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if (isOffering) {
+          setStatus('Код готов! Скопируйте и отправьте собеседнику');
+          addSystemMessage('Ваш код приглашения готов. Отправьте его собеседнику:<br><code style="display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;background:#1a1a40;padding:6px 10px;border-radius:6px;margin-top:4px;font-size:11px;word-break:break-all;color:#e94560;">' + escapedSdp + '</code> <button class="copy-code-btn" data-code="' + sdp.replace(/"/g, '&quot;') + '">Копировать</button>');
         } else {
-          setStatus('Скопируйте ответный код и отправьте обратно');
+          setStatus('Код ответа готов! Отправьте обратно');
+          addSystemMessage('Ответный код готов. Отправьте его собеседнику:<br><code style="display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;background:#1a1a40;padding:6px 10px;border-radius:6px;margin-top:4px;font-size:11px;word-break:break-all;color:#e94560;">' + escapedSdp + '</code> <button class="copy-code-btn" data-code="' + sdp.replace(/"/g, '&quot;') + '">Копировать</button>');
         }
       }
     };
@@ -200,6 +237,12 @@ body {
   }
 
   createOfferBtn.addEventListener('click', function() {
+    createOffer();
+  });
+
+  function createOffer() {
+    if (pc) return;
+    isOffering = true;
     createPeerConnection();
     pendingDC.onopen = function() {
       setupChannel(pendingDC);
@@ -210,11 +253,14 @@ body {
       setStatus('Ошибка: ' + err.message, 'disconnected');
     });
     createOfferBtn.disabled = true;
-    applyBtn.textContent = '2. Применить ответ';
-  });
+    applyBtn.textContent = 'Подключиться по коду';
+  }
 
   applyBtn.addEventListener('click', function() {
-    const data = signalData.value.trim();
+    applyCode(signalData.value.trim());
+  });
+
+  function applyCode(data) {
     if (!data) {
       setStatus('Поле пустое. Вставьте код собеседника.', 'disconnected');
       return;
@@ -225,6 +271,7 @@ body {
       return;
     }
     if (!pc) {
+      isOffering = false;
       createPeerConnection();
       pc.ondatachannel = function(e) {
         setupChannel(e.channel);
@@ -240,14 +287,13 @@ body {
         setStatus('Ошибка: ' + err.message, 'disconnected');
       });
       createOfferBtn.disabled = true;
-      applyBtn.textContent = '2. Применить ответ';
     } else if (desc.type === 'answer') {
       pc.setRemoteDescription(desc).catch(function(err) {
         setStatus('Ошибка: ' + err.message, 'disconnected');
       });
       applyBtn.disabled = true;
     }
-  });
+  }
 
   copyBtn.addEventListener('click', function() {
     const text = signalData.value;
@@ -262,7 +308,36 @@ body {
 
   function sendMessage() {
     const text = msgInput.value.trim();
-    if (!text || !dc || dc.readyState !== 'open') return;
+    if (!text) return;
+
+    if (text === '/invite') {
+      msgInput.value = '';
+      if (pc) {
+        addSystemMessage('Вы уже в процессе подключения. Обновите страницу для нового приглашения.');
+        return;
+      }
+      createOffer();
+      return;
+    }
+
+    if (text.startsWith('/join ')) {
+      msgInput.value = '';
+      const code = text.slice(6).trim();
+      if (!code) {
+        addSystemMessage('Укажите код: /join &lt;код&gt;');
+        return;
+      }
+      signalData.value = code;
+      applyCode(code);
+      return;
+    }
+
+    if (!dc || dc.readyState !== 'open') {
+      addSystemMessage('Нет соединения. Создайте приглашение (/invite) или подключитесь по коду (/join &lt;код&gt;).');
+      msgInput.value = '';
+      return;
+    }
+
     dc.send(text);
     addMessage(text, 'outgoing');
     msgInput.value = '';
