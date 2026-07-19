@@ -3,170 +3,280 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>P2P Мессенджер</title>
-<script src="https://unpkg.com/peerjs@1.5.1/dist/peerjs.min.js"></script>
+<title>P2P Чат без сервера</title>
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; height: 100vh; display: flex; justify-content: center; align-items: center; }
-.wrapper { width: 100%; max-width: 500px; height: 100vh; max-height: 700px; display: flex; flex-direction: column; background: white; border-radius: 12px; box-shadow: 0 2px 20px rgba(0,0,0,0.1); margin: 16px; }
-.header { background: #075e54; color: white; padding: 16px 20px; border-radius: 12px 12px 0 0; }
-.header h1 { font-size: 18px; }
-.header p { font-size: 12px; opacity: 0.9; word-break: break-all; margin-top: 4px; }
-.connect-bar { display: flex; gap: 8px; padding: 12px 16px; border-bottom: 1px solid #e0e0e0; }
-.connect-bar input { flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; outline: none; }
-.connect-bar input:focus { border-color: #075e54; }
-.connect-bar button { padding: 8px 16px; background: #075e54; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; white-space: nowrap; }
-.connect-bar button:hover { background: #054d44; }
-.connect-bar button:disabled { background: #b0b0b0; cursor: not-allowed; }
-.messages { flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; background: #e5ddd5; }
-.msg { max-width: 80%; padding: 8px 14px; border-radius: 8px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
-.msg.self { align-self: flex-end; background: #dcf8c6; }
-.msg.remote { align-self: flex-start; background: white; }
-.msg .time { font-size: 11px; color: #999; margin-top: 2px; text-align: right; }
-.msg.system { align-self: center; background: transparent; color: #666; font-size: 12px; font-style: italic; }
-.send-bar { display: flex; gap: 8px; padding: 12px 16px; border-top: 1px solid #e0e0e0; }
-.send-bar input { flex: 1; padding: 10px 12px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; outline: none; }
-.send-bar input:focus { border-color: #075e54; }
-.send-bar button { padding: 10px 20px; background: #075e54; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; }
-.send-bar button:hover { background: #054d44; }
-.send-bar button:disabled { background: #b0b0b0; cursor: not-allowed; }
-.instructions { padding: 12px 16px; background: #fafafa; border-top: 1px solid #e0e0e0; font-size: 12px; color: #555; border-radius: 0 0 12px 12px; }
-.instructions summary { cursor: pointer; font-weight: 600; color: #075e54; }
-.instructions ol { margin: 8px 0 0 18px; line-height: 1.6; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #1a1a2e; color: #eee; height: 100vh; display: flex; justify-content: center; align-items: center;
+}
+.chat-container {
+  width: 420px; max-width: 100vw; height: 100vh; max-height: 750px;
+  display: flex; flex-direction: column; background: #16213e; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.header {
+  background: #0f3460; padding: 16px 20px; text-align: center;
+}
+.header h1 { font-size: 18px; font-weight: 600; }
+.header p { font-size: 12px; color: #aaa; margin-top: 4px; }
+.step-area {
+  padding: 10px 16px; display: flex; flex-direction: column; gap: 8px; background: #1a1a40; flex-shrink: 0;
+}
+.step-area textarea {
+  width: 100%; height: 80px; padding: 8px 10px; border: 1px solid #333; border-radius: 8px;
+  background: #0f3460; color: #eee; font-size: 12px; font-family: monospace; resize: vertical; outline: none;
+}
+.step-area textarea:focus { border-color: #e94560; }
+.step-row { display: flex; gap: 8px; }
+.step-row button {
+  padding: 8px 14px; border: none; border-radius: 8px; background: #e94560;
+  color: #fff; font-weight: 600; cursor: pointer; font-size: 13px; white-space: nowrap;
+}
+.step-row button:hover { background: #d63851; }
+.step-row button:disabled { opacity: .5; cursor: not-allowed; }
+.step-row button.secondary { background: #0f3460; }
+.step-row button.secondary:hover { background: #1a4a7a; }
+.status {
+  padding: 6px 16px; font-size: 13px; background: #1a1a40; color: #888; text-align: center; min-height: 28px; flex-shrink: 0;
+}
+.status.connected { color: #2ecc71; }
+.status.disconnected { color: #e74c3c; }
+.messages {
+  flex: 1; overflow-y: auto; padding: 12px 16px; display: flex; flex-direction: column; gap: 6px;
+}
+.msg {
+  max-width: 80%; padding: 8px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; word-break: break-word;
+}
+.msg.outgoing { align-self: flex-end; background: #e94560; color: #fff; border-bottom-right-radius: 4px; }
+.msg.incoming { align-self: flex-start; background: #0f3460; color: #eee; border-bottom-left-radius: 4px; }
+.msg .time { font-size: 10px; opacity: .6; margin-top: 3px; }
+.msg.system {
+  align-self: center; background: transparent; color: #888; font-size: 12px; font-style: italic;
+}
+.input-bar {
+  display: flex; gap: 8px; padding: 10px 16px 16px; background: #1a1a40;
+}
+.input-bar input {
+  flex: 1; padding: 10px 14px; border: 1px solid #333; border-radius: 24px;
+  background: #0f3460; color: #eee; font-size: 14px; outline: none;
+}
+.input-bar input:focus { border-color: #e94560; }
+.input-bar input:disabled { opacity: .4; }
+.input-bar button {
+  width: 44px; height: 44px; border: none; border-radius: 50%; background: #e94560;
+  color: #fff; font-size: 18px; cursor: pointer;
+}
+.input-bar button:hover { background: #d63851; }
+.input-bar button:disabled { opacity: .4; cursor: not-allowed; }
+.instructions {
+  padding: 12px 16px; background: #0f3460; font-size: 12px; line-height: 1.6; border-top: 1px solid #1a1a40;
+  max-height: 200px; overflow-y: auto; flex-shrink: 0;
+}
+.instructions summary { cursor: pointer; color: #e94560; font-weight: 600; }
+.instructions ol { padding-left: 18px; margin-top: 6px; color: #ccc; }
+.instructions li { margin-bottom: 4px; }
 </style>
 </head>
 <body>
-
-<div class="wrapper">
+<div class="chat-container">
   <div class="header">
-    <h1>P2P Мессенджер</h1>
-    <p id="myId">Ваш ID: загрузка...</p>
+    <h1>P2P Чат без сервера</h1>
+    <p>Обмен сигналами — вручную, через внешний канал</p>
   </div>
 
-  <div class="connect-bar">
-    <input id="peerIdInput" placeholder="ID собеседника" autocomplete="off">
-    <button id="connectBtn">Подключиться</button>
+  <div class="step-area" id="stepArea">
+    <textarea id="signalData" placeholder="Сюда будет помещён сигнальный код для отправки собеседнику или вставьте код от него..."></textarea>
+    <div class="step-row">
+      <button id="createOfferBtn">1. Создать приглашение</button>
+      <button id="copyBtn" class="secondary">Копировать</button>
+      <button id="applyBtn">2. Применить ответ / Приглашение</button>
+    </div>
   </div>
+
+  <div class="status" id="status">Ожидание...</div>
 
   <div class="messages" id="messages"></div>
 
-  <div class="send-bar">
-    <input id="msgInput" placeholder="Введите сообщение..." autocomplete="off" disabled>
-    <button id="sendBtn" disabled>Отправить</button>
+  <div class="input-bar">
+    <input type="text" id="msgInput" placeholder="Введите сообщение..." disabled>
+    <button id="sendBtn" disabled>➤</button>
   </div>
 
   <details class="instructions">
-    <summary>Как запустить и протестировать</summary>
+    <summary>Как пользоваться (без единого сервера)</summary>
     <ol>
-      <li>Откройте эту страницу в двух вкладках браузера (или на двух устройствах).</li>
-      <li>В каждой вкладке вверху отобразится уникальный ID (Peer ID). Скопируйте ID из одной вкладки.</li>
-      <li>В другой вкладке вставьте скопированный ID в поле «ID собеседника» и нажмите «Подключиться».</li>
-      <li>После подключения можно отправлять сообщения — они будут доставляться напрямую через P2P.</li>
-      <li>Если страница размещена на GitHub Pages, откройте её в двух окнах браузера и повторите шаги 2–4.</li>
+      <li>Откройте страницу в двух браузерах (A и B).</li>
+      <li>В окне A нажмите <strong>"1. Создать приглашение"</strong> — в поле появится код.</li>
+      <li>Нажмите <strong>"Копировать"</strong> и отправьте код собеседнику B (хоть в блокнот, хоть по email).</li>
+      <li>В окне B вставьте код в поле и нажмите <strong>"2. Применить ответ / Приглашение"</strong> — в поле B появится ответный код.</li>
+      <li>Скопируйте код из B и отправьте обратно A.</li>
+      <li>В окне A вставьте ответ и снова нажмите <strong>"2. Применить ответ / Приглашение"</strong>.</li>
+      <li>Готово! Теперь можно обмениваться сообщениями.</li>
+      <li>Если связь потеряна — начните заново (обновите страницу).</li>
     </ol>
-    <p style="margin-top:6px"><strong>Примечание:</strong> Для работы необходим доступ к серверам PeerJS (по умолчанию 0.peerjs.com). Если он недоступен, P2P-соединение может не установиться.</p>
   </details>
 </div>
 
 <script>
 (function() {
-  const peer = new Peer();
-  let conn = null;
+  let pc = null;
+  let dc = null;
+  let pendingDC = null;
+  const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-  const myIdEl = document.getElementById('myId');
-  const peerIdInput = document.getElementById('peerIdInput');
-  const connectBtn = document.getElementById('connectBtn');
+  const signalData = document.getElementById('signalData');
+  const createOfferBtn = document.getElementById('createOfferBtn');
+  const copyBtn = document.getElementById('copyBtn');
+  const applyBtn = document.getElementById('applyBtn');
+  const statusEl = document.getElementById('status');
   const messagesEl = document.getElementById('messages');
   const msgInput = document.getElementById('msgInput');
   const sendBtn = document.getElementById('sendBtn');
 
-  peer.on('open', id => {
-    myIdEl.textContent = 'Ваш ID: ' + id;
-  });
-
-  peer.on('connection', incomingConn => {
-    if (conn) {
-      incomingConn.close();
-      return;
-    }
-    setupConnection(incomingConn);
-    addMessage('system', 'Собеседник подключился');
-  });
-
-  peer.on('error', err => {
-    addMessage('system', 'Ошибка: ' + err.type);
-  });
-
-  connectBtn.addEventListener('click', () => {
-    const targetId = peerIdInput.value.trim();
-    if (!targetId) return;
-    if (conn) {
-      addMessage('system', 'Вы уже подключены к собеседнику');
-      return;
-    }
-    const outgoingConn = peer.connect(targetId, { reliable: true });
-    outgoingConn.on('open', () => {
-      setupConnection(outgoingConn);
-      addMessage('system', 'Вы подключились к собеседнику');
-    });
-    outgoingConn.on('error', () => {
-      addMessage('system', 'Не удалось подключиться. Проверьте ID собеседника.');
-    });
-  });
-
-  function setupConnection(c) {
-    conn = c;
-    setUIEnabled(true);
-    conn.on('data', data => {
-      addMessage('remote', data);
-    });
-    conn.on('close', () => {
-      addMessage('system', 'Собеседник отключился');
-      conn = null;
-      setUIEnabled(false);
-    });
+  function setStatus(text, type) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (type ? ' ' + type : '');
   }
 
-  function setUIEnabled(enabled) {
-    msgInput.disabled = !enabled;
-    sendBtn.disabled = !enabled;
-    connectBtn.disabled = enabled;
-    if (enabled) msgInput.focus();
-  }
-
-  function sendMessage() {
-    const text = msgInput.value.trim();
-    if (!text || !conn) return;
-    conn.send(text);
-    addMessage('self', text);
-    msgInput.value = '';
-    msgInput.focus();
-  }
-
-  sendBtn.addEventListener('click', sendMessage);
-  msgInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') sendMessage();
-  });
-
-  function addMessage(type, text) {
+  function addMessage(text, type) {
     const div = document.createElement('div');
     div.className = 'msg ' + type;
-    if (type === 'system') {
-      div.textContent = text;
-    } else {
-      const span = document.createElement('span');
-      span.textContent = text;
-      div.appendChild(span);
+    div.textContent = text;
+    if (type !== 'system') {
       const time = document.createElement('div');
       time.className = 'time';
-      time.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      time.textContent = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
       div.appendChild(time);
     }
     messagesEl.appendChild(div);
     messagesEl.scrollTop = messagesEl.scrollHeight;
   }
+
+  function setConnected() {
+    setStatus('Подключено! Можно обмениваться сообщениями.', 'connected');
+    msgInput.disabled = false;
+    sendBtn.disabled = false;
+    msgInput.focus();
+    signalData.disabled = true;
+    createOfferBtn.disabled = true;
+    applyBtn.disabled = true;
+    copyBtn.disabled = true;
+  }
+
+  function setupChannel(channel) {
+    dc = channel;
+    dc.onopen = function() {
+      addMessage('Соединение установлено', 'system');
+      setConnected();
+    };
+    dc.onmessage = function(e) {
+      addMessage(e.data, 'incoming');
+    };
+    dc.onclose = function() {
+      addMessage('Соединение разорвано', 'system');
+      setStatus('Соединение разорвано', 'disconnected');
+    };
+  }
+
+  function createPeerConnection() {
+    pc = new RTCPeerConnection(config);
+    pendingDC = pc.createDataChannel('chat');
+
+    pc.onicegatheringstatechange = function() {
+      if (pc.iceGatheringState === 'complete') {
+        const sdp = JSON.stringify(pc.localDescription);
+        signalData.value = sdp;
+        if (createOfferBtn.textContent === '1. Создать приглашение') {
+          setStatus('Скопируйте код и отправьте собеседнику');
+        } else {
+          setStatus('Скопируйте ответный код и отправьте обратно');
+        }
+      }
+    };
+
+    pc.ondatachannel = function(e) {
+      setupChannel(e.channel);
+    };
+  }
+
+  createOfferBtn.addEventListener('click', function() {
+    createPeerConnection();
+    pendingDC.onopen = function() {
+      setupChannel(pendingDC);
+    };
+    pc.createOffer().then(function(offer) {
+      return pc.setLocalDescription(offer);
+    }).catch(function(err) {
+      setStatus('Ошибка: ' + err.message, 'disconnected');
+    });
+    createOfferBtn.disabled = true;
+    applyBtn.textContent = '2. Применить ответ';
+  });
+
+  applyBtn.addEventListener('click', function() {
+    const data = signalData.value.trim();
+    if (!data) {
+      setStatus('Поле пустое. Вставьте код собеседника.', 'disconnected');
+      return;
+    }
+    let sdp;
+    try { sdp = JSON.parse(data); } catch(e) {
+      setStatus('Некорректный код. Скопируйте точнее.', 'disconnected');
+      return;
+    }
+    if (!pc) {
+      createPeerConnection();
+      pc.ondatachannel = function(e) {
+        setupChannel(e.channel);
+      };
+    }
+    const desc = new RTCSessionDescription(sdp);
+    if (desc.type === 'offer') {
+      pc.setRemoteDescription(desc).then(function() {
+        return pc.createAnswer();
+      }).then(function(answer) {
+        return pc.setLocalDescription(answer);
+      }).catch(function(err) {
+        setStatus('Ошибка: ' + err.message, 'disconnected');
+      });
+      createOfferBtn.disabled = true;
+      applyBtn.textContent = '2. Применить ответ';
+    } else if (desc.type === 'answer') {
+      pc.setRemoteDescription(desc).catch(function(err) {
+        setStatus('Ошибка: ' + err.message, 'disconnected');
+      });
+      applyBtn.disabled = true;
+    }
+  });
+
+  copyBtn.addEventListener('click', function() {
+    const text = signalData.value;
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(function() {
+      setStatus('Код скопирован');
+    }).catch(function() {
+      signalData.select();
+      setStatus('Выделите и скопируйте вручную (Ctrl+C)');
+    });
+  });
+
+  function sendMessage() {
+    const text = msgInput.value.trim();
+    if (!text || !dc || dc.readyState !== 'open') return;
+    dc.send(text);
+    addMessage(text, 'outgoing');
+    msgInput.value = '';
+    msgInput.focus();
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  msgInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
 })();
 </script>
-
 </body>
 </html>
